@@ -1,0 +1,172 @@
+plugins {
+  id("java-library")
+  id("eclipse")
+  id("checkstyle")
+  id("me.champeau.jmh") version "0.7.3"
+  id "com.github.ben-manes.versions" version "0.54.0"
+}
+
+java.targetCompatibility = JavaVersion.VERSION_26
+java.sourceCompatibility = JavaVersion.VERSION_26
+
+group = "com.github.akarnokd" 
+ext.githubProjectName = 'reactive-scrabble'
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+if (!hasProperty('mainClass')) {
+    ext.mainClass = ''
+}
+
+
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+    maven { url 'https://oss.sonatype.org/content/groups/public' }
+    maven { url 'https://repo.spring.io/libs-snapshot' }
+    maven { url 'https://central.sonatype.com/repository/maven-snapshots' }
+}
+
+dependencies {
+    api 'org.reactivestreams:reactive-streams:1.0.4'
+
+    implementation 'io.reactivex:rxjava:1.+'
+    implementation 'io.reactivex:rxjava-string:+'
+    implementation 'io.reactivex:rxjava-reactive-streams:+'
+
+    implementation 'io.reactivex.rxjava2:rxjava:2.2.21'
+    implementation 'io.reactivex.rxjava3:rxjava:3.1.12'
+    implementation 'io.reactivex.rxjava4:rxjava:4.0.0-SNAPSHOT'
+
+    //compile 'io.projectreactor:reactor-core:3.0.0.BUILD-SNAPSHOT'
+    implementation 'io.projectreactor:reactor-core:3+'
+    testImplementation 'io.projectreactor:reactor-test:3+'
+
+    implementation group: 'io.projectreactor.addons', name: 'reactor-extra', version: '3+'
+
+    implementation group: 'io.helidon.common', name: 'helidon-common-reactive', version: '4.5.1'
+    
+    implementation 'com.typesafe.akka:akka-stream_2.13:2.8.8'
+    
+    implementation 'org.jctools:jctools-core:4.+'
+
+
+    implementation 'com.aol.simplereact:cyclops-react:+'
+
+    implementation 'org.jooq:jool-java-8:+'
+
+    implementation('io.reactivex:rxjava-math:+') {
+    	exclude group: "io.reactivex", module: "rxjava"
+    }
+
+    implementation 'com.annimon:stream:+'
+
+    // -------------------------------------------------------------------
+
+    //implementation 'io.projectreactor:reactive-streams-commons:0.6.0.BUILD-SNAPSHOT'
+
+    implementation('com.github.akarnokd:ixjava:1.+') {
+    	exclude group: "io.reactivex", module: "rxjava"
+    }
+    
+    implementation('com.github.akarnokd:akarnokd-reactive-rpc:+') {
+        exclude group: "io.reactivex.rxjava2", module: "rxjava"
+        exclude group: "com.github.akarnokd", module: "*"
+    }
+
+    implementation 'com.github.akarnokd:akarnokd-xml:+'
+
+    implementation('com.github.akarnokd:rxjava2-extensions:+') {
+    	exclude group: "io.reactivex.rxjava2", module: "rxjava"
+    }
+
+    implementation('com.github.akarnokd:rxjava3-extensions:+') {
+        exclude group: "io.reactivex.rxjava3", module: "rxjava"
+    }
+
+    implementation('com.github.akarnokd:rxjava4-extensions:+') {
+        exclude group: "io.reactivex.rxjava4", module: "rxjava"
+    }
+
+    implementation('com.github.akarnokd:rxjava2-interop:+') {
+        exclude group: "io.reactivex.rxjava2", module: "rxjava"
+    }
+
+    implementation('com.github.akarnokd:rxjava2-jdk8-interop:+') {
+    	exclude group: "io.reactivex.rxjava2", module: "rxjava"
+    	exclude group: "com.github.akarnokd", module: "rxjava2-extensions"
+    }
+
+    implementation 'com.github.akarnokd:reactive4java:+'
+
+    // -------------------------------------------------------------------
+    
+    implementation 'com.google.guava:guava:+'
+
+
+}
+
+processResources {
+  from ('src/main/java') {
+    include '**/*.conf'
+  }
+}
+
+jmh {
+    jmhVersion = '1.37'
+    includeTests = false
+    duplicateClassesStrategy = 'warn'
+    verbosity = 'EXTRA' // Verbosity mode. Available modes are: [SILENT, NORMAL, EXTRA]
+    
+    // For Epsilon GC, add: "-Xmx12G", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseEpsilonGC"
+    // For Shenandoah, add: "-XX:+UseShenandoahGC" [optionally "-XX:+UnlockDiagnosticVMOptions", "-XX:ShenandoahGCHeuristics=passive"]
+    // For Parallel GC, add: "-XX:+UseParallelGC"
+    // For G1 GC, add: "-XX:+UseG1GC"
+    // For ZGC, add: "-XX:+UnlockExperimentalVMOptions", "-XX:+UseZGC"
+    // ---------------------------------------------------------------------------------------
+    jvmArgsAppend = ["-Djmh.separateClasspathJAR=true", "-XX:+UseParallelGC"]
+    // ---------------------------------------------------------------------------------------
+    
+    
+    //jvmArgs = '-XX:MaxInlineLevel=20' use @Fork attribute
+    includes = [".*ShakespearePlaysScrabble.*"]
+    if (project.hasProperty("jmhIncludes")) {
+        includes = ".*" + project.getProperty("jmhIncludes") + ".*"
+    }
+    // If -Pjmh.profilers is provided, use it; otherwise, use no profilers
+    if (project.hasProperty('jmh.profilers')) {
+        profilers = project.property('jmh.profilers').split(',')
+    }
+    // humanOutputFile = project.file("${project.buildDir}/reports/jmh/human.txt") // human-readable output file
+    humanOutputFile = null
+    resultsFile = project.file("${project.buildDir}/reports/jmh/results.txt") // results file
+}
+
+plugins.withType(EclipsePlugin) {
+    project.eclipse.classpath.plusConfigurations += [ configurations.jmh ]
+}
+
+javadoc {
+    failOnError = false
+}
+
+test {
+    maxHeapSize = "2g"
+    testLogging  {
+        events "started", "failed" // "skipped", "passed"
+    //    showStandardStreams = true
+    }
+}
+
+checkstyle {
+    configFile = project.file("config/checkstyle/checkstyle.xml")
+    configProperties = [
+            "checkstyle.suppressions.file": project.file("config/checkstyle/suppressions.xml"),
+            "checkstyle.header.file"      : project.file("config/license/HEADER_JAVA"),
+            "project_loc"                 : project.projectDir.absolutePath
+    ]
+    checkstyleMain.exclude '**/module-info.java'
+}
