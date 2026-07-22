@@ -30,7 +30,7 @@ gradlew jmh -PjmhIncludes=Helidon --rerun-tasks
 | Iterable4Java                          | 0.98.1  |  15,665 | ±  0,191 | ms/op |
 | IxJava                                 | 1.0.0   |   9,221 | ±  0,072 | ms/op |
 | JOOL                                   | 0.9.15  |  41,213 | ±  0,713 | ms/op |
-| JoxFlows                               | 0.5.3   |  35,088 | ±  0,247 | ms/op |
+| JoxFlows                               | 0.5.3   |  33,247 | ±  0,247 | ms/op |
 | JavaForLoop                            | 26.0.1  |   2,523 | ±  0,015 | ms/op |
 | JavaStream                             | 26.0.1  |  10,608 | ±  0,129 | ms/op |
 | JavaStreamParallel                     | 26.0.1  |   1,321 | ±  0,006 | ms/op |
@@ -82,7 +82,7 @@ gradlew jmh -PjmhIncludes=Helidon --rerun-tasks
 | CyclopsReact                           | 2.1.1   |  21,071 | ±  0,455 | ms/op |
 | AbacusCommon                           | 7.8.8   |  24,711 | ±  0,270 | ms/op |
 | Mutiny                                 | 3.3.0   |  27,250 | ±  0,161 | ms/op |
-| JoxFlows                               | 0.5.3   |  35,088 | ±  0,247 | ms/op |
+| JoxFlows                               | 0.5.3   |  33,247 | ±  0,247 | ms/op |
 | JOOL                                   | 0.9.15  |  41,213 | ±  0,713 | ms/op |
 | Vavr                                   | 1.0.1   |  48,369 | ±  0,631 | ms/op |
 | RxJava1                                | 1.3.8   |  50,612 | ±  0,421 | ms/op |

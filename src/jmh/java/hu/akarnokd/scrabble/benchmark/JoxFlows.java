@@ -74,20 +74,12 @@ public class JoxFlows extends ShakespearePlaysScrabble {
 
         // Histogram of the letters in a given word
         ThrowingFunction<String, Flow<HashMap<Integer, MutableLong>>> histoOfLetters =
-                word -> Flows.usingEmit(emit -> emit.apply(toIntegerFlow.apply(word)
-                            .scan(
-                                new HashMap<Integer, MutableLong>(),
-                                (map, value) ->
-                                    {
-                                        MutableLong newValue = map.get(value) ;
-                                        if (newValue == null) {
-                                            newValue = new MutableLong();
-                                            map.put(value, newValue);
-                                        }
-                                        newValue.incAndSet();
-                                        return map;
-                                    }
-                            ).runLast()));
+                word -> Flows.usingEmit(emit -> emit.apply(
+                        toIntegerFlow.apply(word)
+                        .runFold(new HashMap<>(), (map, value) -> {
+                            map.computeIfAbsent(value, _ -> new MutableLong()).incAndSet();
+                            return map;
+                        })));
 
         // number of blanks for a given letter
         ThrowingFunction<Entry<Integer, MutableLong>, Long> blank =
@@ -171,7 +163,7 @@ public class JoxFlows extends ShakespearePlaysScrabble {
                                         return false;
                                     }
                                 })
-                                .scan(
+                                .runFold(
                                     new TreeMap<Integer, List<String>>(Comparator.reverseOrder()),
                                     (map, word) -> {
                                         Integer key = score.apply(word).runLast();
@@ -183,7 +175,7 @@ public class JoxFlows extends ShakespearePlaysScrabble {
                                         list.add(word);
                                         return map;
                                     }
-                                ).runLast()));
+                                )));
 
         // best key / value pairs
         List<Entry<Integer, List<String>>> finalList2 =
@@ -191,14 +183,7 @@ public class JoxFlows extends ShakespearePlaysScrabble {
                             map -> map.entrySet()
                     )
                     .take(3)
-                    .scan(
-                        new ArrayList<Entry<Integer, List<String>>>(),
-                        (list, entry) -> {
-                            list.add(entry) ;
-                            return list;
-                        }
-                    )
-                    .runLast();
+                    .runToList();
 
 
 //        System.out.println(finalList2);
