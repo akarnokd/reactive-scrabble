@@ -27,11 +27,13 @@ public final class Util {
 
     private Util() { }
 
+    static final String PROJECT_NAME = "reactive-scrabble";
+    
     static Path findPath(String resourceName) {
         try {
             String uri = new File(Util.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getAbsolutePath();
-            int i = uri.indexOf("akarnokd-misc");
-            return Paths.get(uri.substring(0, i + 13), "files", resourceName);
+            int i = uri.indexOf(PROJECT_NAME);
+            return Paths.get(uri.substring(0, i + PROJECT_NAME.length()), "files", resourceName);
         } catch (Exception ex) {
             ex.printStackTrace();
             return Paths.get("files", resourceName);

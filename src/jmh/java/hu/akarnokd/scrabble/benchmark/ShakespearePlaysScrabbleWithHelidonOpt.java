@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 import org.openjdk.jmh.annotations.*;
 
-import hu.akarnokd.scrabble.support.ShakespearePlaysScrabble;
+import hu.akarnokd.scrabble.support.*;
 import io.helidon.common.reactive.*;
 
 /// Shakespeare plays Scrabble with RxJava 4 Streamable optimized.
@@ -37,14 +37,13 @@ import io.helidon.common.reactive.*;
 /// | Step | Time (ms) | Improvement | vs Baseline |
 /// |------|------|-------------:|-------------:|
 /// | Baseline | 17,266 | - | - |
-/// | char streaming | | | |
+/// | char streaming | 15,457 | -10,47% | |
 ///
 /// @author José
 /// @author akarnokd
 public class ShakespearePlaysScrabbleWithHelidonOpt extends ShakespearePlaysScrabble {
     static Multi<Integer> chars(String word) {
-        // FIXME dedicated char producer
-        return Multi.range(0, word.length()).map(index -> (int)word.charAt(index));
+        return new MultiCharSequence(word);
     }
 
     @SuppressWarnings("unused")
