@@ -1,18 +1,14 @@
 /*
- * Copyright (C) 2019 José Paumard
+ * Copyright (c) 2016-present, David Karnok & Contributors.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
  */
 
 package hu.akarnokd.scrabble.benchmark;
@@ -23,16 +19,22 @@ import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.*;
 
-import hu.akarnokd.scrabble.observables.IObservable;
+import hu.akarnokd.rxjava4.math.MathFlowable;
+import hu.akarnokd.rxjava4.string.StringFlowable;
 import hu.akarnokd.scrabble.support.ShakespearePlaysScrabble;
-import io.reactivex.functions.Function;
+import io.reactivex.rxjava4.core.*;
+import io.reactivex.rxjava4.functions.Function;
 
 /**
- * Shakespeare plays Scrabble with synchronous-only, non-backpressured IObservable optimized.
+ * Shakespeare plays Scrabble with RxJava 4 Flowable optimized.
  * @author José
  * @author akarnokd
  */
-public class ShakespearePlaysScrabbleWithIObsOpt extends ShakespearePlaysScrabble {
+public class RxJava4Flowable extends ShakespearePlaysScrabble {
+    static Flowable<Integer> chars(String word) {
+//        return Flowable.range(0, word.length()).map(i -> (int)word.charAt(i));
+        return StringFlowable.characters(word);
+    }
 
     @SuppressWarnings("unused")
     @Benchmark
@@ -44,8 +46,14 @@ public class ShakespearePlaysScrabbleWithIObsOpt extends ShakespearePlaysScrabbl
     @Measurement(
         iterations = 5, time = 1
     )
-    @Fork(1)
-    public List<Entry<Integer, List<String>>> measureThroughput() throws Exception {
+    @Fork(value = 1, jvmArgs = {
+            "-XX:MaxInlineLevel=20"
+//            , "-XX:+UnlockDiagnosticVMOptions",
+//            , "-XX:+PrintAssembly",
+//            , "-XX:+TraceClassLoading",
+//            , "-XX:+LogCompilation"
+    })
+    public List<Entry<Integer, List<String>>> measureThroughput() throws Throwable {
 
         //  to compute the score of a given word
         Function<Integer, Integer> scoreOfALetter = letter -> letterScores[letter - 'a'];
@@ -61,12 +69,12 @@ public class ShakespearePlaysScrabbleWithIObsOpt extends ShakespearePlaysScrabbl
                     ;
 
 
-        Function<String, IObservable<Integer>> toIntegerIx =
-                string -> IObservable.characters(string);
+        Function<String, Flowable<Integer>> toIntegerFlowable =
+                string -> chars(string);
 
         // Histogram of the letters in a given word
-        Function<String, IObservable<HashMap<Integer, MutableLong>>> histoOfLetters =
-                word -> toIntegerIx.apply(word)
+        Function<String, Single<HashMap<Integer, MutableLong>>> histoOfLetters =
+                word -> toIntegerFlowable.apply(word)
                             .collect(
                                 () -> new HashMap<>(),
                                 (HashMap<Integer, MutableLong> map, Integer value) ->
@@ -92,67 +100,75 @@ public class ShakespearePlaysScrabbleWithIObsOpt extends ShakespearePlaysScrabbl
                     ;
 
         // number of blanks for a given word
-        Function<String, IObservable<Long>> nBlanks =
-                word -> histoOfLetters.apply(word)
-                            .flatMapIterable(map -> map.entrySet())
+        Function<String, Flowable<Long>> nBlanks =
+                word -> MathFlowable.sumLong(
+                            histoOfLetters.apply(word).flattenAsFlowable(
+                                    map -> map.entrySet()
+                            )
                             .map(blank)
-                            .sumLong();
+                        )
+                    ;
 
 
         // can a word be written with 2 blanks?
-        Function<String, IObservable<Boolean>> checkBlanks =
+        Function<String, Flowable<Boolean>> checkBlanks =
                 word -> nBlanks.apply(word)
                             .map(l -> l <= 2L) ;
 
         // score taking blanks into account letterScore1
-        Function<String, IObservable<Integer>> score2 =
-                word -> histoOfLetters.apply(word)
-                            .flatMapIterable(map -> map.entrySet())
+        Function<String, Flowable<Integer>> score2 =
+                word -> MathFlowable.sumInt(
+                            histoOfLetters.apply(word).flattenAsFlowable(
+                                map -> map.entrySet()
+                            )
                             .map(letterScore)
-                            .sumInt();
+                            ) ;
 
         // Placing the word on the board
         // Building the streams of first and last letters
-        Function<String, IObservable<Integer>> first3 =
-                word -> IObservable.characters(word).take(3) ;
-        Function<String, IObservable<Integer>> last3 =
-                word -> IObservable.characters(word).skip(3) ;
+        Function<String, Flowable<Integer>> first3 =
+                word -> chars(word).take(3) ;
+        Function<String, Flowable<Integer>> last3 =
+                word -> chars(word).skip(3) ;
 
 
         // Stream to be maxed
-        Function<String, IObservable<Integer>> toBeMaxed =
-            word -> IObservable.concatArray(first3.apply(word), last3.apply(word))
+        Function<String, Flowable<Integer>> toBeMaxed =
+            word -> Flowable.concatArray(first3.apply(word), last3.apply(word))
             ;
 
         // Bonus for double letter
-        Function<String, IObservable<Integer>> bonusForDoubleLetter =
-            word -> toBeMaxed.apply(word)
+        Function<String, Flowable<Integer>> bonusForDoubleLetter =
+            word -> MathFlowable.max(toBeMaxed.apply(word)
                         .map(scoreOfALetter)
-                        .maxInt();
+                        ) ;
 
         // score of the word put on the board
-        Function<String, IObservable<Integer>> score3 =
+        Function<String, Flowable<Integer>> score3 =
             word ->
-//        IObservable.concatArray(
+//                MathFlowable.sumInt(Flowable.concat(
 //                        score2.apply(word).map(v -> v * 2),
 //                        bonusForDoubleLetter.apply(word).map(v -> v * 2),
-//                        IObservable.just(word.length() == 7 ? 50 : 0)
-//                )
-//                .sumInt();
-        IObservable.concatArray(
-                score2.apply(word),
-                bonusForDoubleLetter.apply(word)
-        )
-        .sumInt().map(v -> 2 * v + (word.length() == 7 ? 50 : 0));
+//                        Flowable.just(word.length() == 7 ? 50 : 0)
+//                  ));
+                MathFlowable.sumInt(Flowable.concatArray(
+                    score2.apply(word),
+                    bonusForDoubleLetter.apply(word)
+                )).map(v -> v * 2 + (word.length() == 7 ? 50 : 0))
+//                new FlowableSumIntArray<Integer>(
+//                        score2.apply(word),
+//                        bonusForDoubleLetter.apply(word)
+//                ).map(v -> 2 * v + (word.length() == 7 ? 50 : 0))
+                ;
 
-        Function<Function<String, IObservable<Integer>>, IObservable<TreeMap<Integer, List<String>>>> buildHistoOnScore =
-                score -> IObservable.fromIterable(shakespeareWords)
+        Function<Function<String, Flowable<Integer>>, Single<TreeMap<Integer, List<String>>>> buildHistoOnScore =
+                score -> Flowable.fromIterable(shakespeareWords)
                                 .filter(scrabbleWords::contains)
-                                .filter(word -> checkBlanks.apply(word).first())
+                                .filter(word -> checkBlanks.apply(word).blockingFirst())
                                 .collect(
                                     () -> new TreeMap<Integer, List<String>>(Comparator.reverseOrder()),
                                     (TreeMap<Integer, List<String>> map, String word) -> {
-                                        Integer key = score.apply(word).first() ;
+                                        Integer key = score.apply(word).blockingFirst() ;
                                         List<String> list = map.get(key) ;
                                         if (list == null) {
                                             list = new ArrayList<>() ;
@@ -164,8 +180,9 @@ public class ShakespearePlaysScrabbleWithIObsOpt extends ShakespearePlaysScrabbl
 
         // best key / value pairs
         List<Entry<Integer, List<String>>> finalList2 =
-                buildHistoOnScore.apply(score3)
-                    .flatMapIterable(map -> map.entrySet())
+                    buildHistoOnScore.apply(score3).flattenAsFlowable(
+                            map -> map.entrySet()
+                    )
                     .take(3)
                     .collect(
                         () -> new ArrayList<Entry<Integer, List<String>>>(),
@@ -173,15 +190,16 @@ public class ShakespearePlaysScrabbleWithIObsOpt extends ShakespearePlaysScrabbl
                             list.add(entry) ;
                         }
                     )
-                    .first() ;
+                    .blockingGet() ;
+
 
 //        System.out.println(finalList2);
 
         return finalList2 ;
     }
 
-    public static void main(String[] args) throws Exception {
-        ShakespearePlaysScrabbleWithIObsOpt s = new ShakespearePlaysScrabbleWithIObsOpt();
+    public static void main(String[] args) throws Throwable {
+        RxJava4Flowable s = new RxJava4Flowable();
         s.init();
         System.out.println(s.measureThroughput());
     }

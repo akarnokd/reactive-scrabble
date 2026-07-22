@@ -26,14 +26,14 @@ import java.util.stream.*;
 import org.openjdk.jmh.annotations.*;
 
 /**
- * Shakespeare plays Scrabble with Streams.
+ * Shakespeare plays Scrabble with Java Streams.
  * @author José
  */
-public abstract class ShakespearePlaysScrabbleWithStreams extends ShakespearePlaysScrabble {
+public abstract class JavaStreamsCommon extends ShakespearePlaysScrabble {
 
 
     @SuppressWarnings("unused")
-//    @Benchmark
+    @Benchmark
     @BenchmarkMode(Mode.SampleTime)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     @Warmup(
@@ -114,9 +114,8 @@ public abstract class ShakespearePlaysScrabbleWithStreams extends ShakespearePla
         // score of the word put on the board
         Function<String, Integer> score3 =
             word ->
-               (score2.apply(word) + bonusForDoubleLetter.applyAsInt(word))
-               + (score2.apply(word) + bonusForDoubleLetter.applyAsInt(word))
-               + (word.length() == 7 ? 50 : 0);
+                 2 * (score2.apply(word) + bonusForDoubleLetter.applyAsInt(word))
+                 + (word.length() == 7 ? 50 : 0);
 
         Function<Function<String, Integer>, Map<Integer, List<String>>> buildHistoOnScore =
                 score -> buildShakerspeareWordsStream()
@@ -144,5 +143,5 @@ public abstract class ShakespearePlaysScrabbleWithStreams extends ShakespearePla
         return finalList ;
     }
 
-    abstract Stream<String> buildShakerspeareWordsStream() ;
+    protected abstract Stream<String> buildShakerspeareWordsStream() ;
 }

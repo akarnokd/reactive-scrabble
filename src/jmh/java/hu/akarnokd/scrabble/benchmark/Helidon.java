@@ -41,7 +41,7 @@ import io.helidon.common.reactive.*;
 ///
 /// @author José
 /// @author akarnokd
-public class ShakespearePlaysScrabbleWithHelidonOpt extends ShakespearePlaysScrabble {
+public class Helidon extends ShakespearePlaysScrabble {
     static Multi<Integer> chars(String word) {
         return new MultiCharSequence(word);
     }
@@ -351,7 +351,7 @@ public class ShakespearePlaysScrabbleWithHelidonOpt extends ShakespearePlaysScra
     }
 
     public static void main(String[] args) throws Throwable {
-        ShakespearePlaysScrabbleWithHelidonOpt s = new ShakespearePlaysScrabbleWithHelidonOpt();
+        Helidon s = new Helidon();
         s.init();
         System.out.println(s.measureThroughput());
     }

@@ -34,7 +34,7 @@ import hu.akarnokd.scrabble.support.ShakespearePlaysScrabble;
  * Shakespeare play Scrabble with Guava optimized.
  * @author José
  */
-public class ShakespearePlaysScrabbleWithGuavaOpt extends ShakespearePlaysScrabble {
+public class Guava extends ShakespearePlaysScrabble {
 
     static FluentIterable<Integer> chars(String word) {
         return new FluentIterable<Integer>() {
@@ -202,7 +202,7 @@ public class ShakespearePlaysScrabbleWithGuavaOpt extends ShakespearePlaysScrabb
     }
 
     public static void main(String[] args) throws Exception {
-        ShakespearePlaysScrabbleWithGuavaOpt s = new ShakespearePlaysScrabbleWithGuavaOpt();
+        Guava s = new Guava();
         s.init();
         System.out.println(s.measureThroughput());
     }

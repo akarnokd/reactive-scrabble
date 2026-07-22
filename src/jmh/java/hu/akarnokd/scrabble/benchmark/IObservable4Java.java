@@ -23,22 +23,18 @@ import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.*;
 
+import hu.akarnokd.scrabble.observables.IObservable;
 import hu.akarnokd.scrabble.support.ShakespearePlaysScrabble;
-import ix.*;
+import io.reactivex.functions.Function;
 
 /**
- * Shakespeare plays Scrabble with Ix optimized.
+ * Shakespeare plays Scrabble with synchronous-only, non-backpressured IObservable optimized.
  * @author José
  * @author akarnokd
  */
-public class ShakespearePlaysScrabbleWithIxOpt extends ShakespearePlaysScrabble {
+public class IObservable4Java extends ShakespearePlaysScrabble {
 
-    static Ix<Integer> chars(String word) {
-        //return Ix.range(0, word.length()).map(i -> (int)word.charAt(i));
-        return Ix.characters(word);
-    }
-
-    @SuppressWarnings({ "unchecked", "unused" })
+    @SuppressWarnings("unused")
     @Benchmark
     @BenchmarkMode(Mode.SampleTime)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -49,13 +45,13 @@ public class ShakespearePlaysScrabbleWithIxOpt extends ShakespearePlaysScrabble 
         iterations = 5, time = 1
     )
     @Fork(1)
-    public List<Entry<Integer, List<String>>> measureThroughput() throws InterruptedException {
+    public List<Entry<Integer, List<String>>> measureThroughput() throws Exception {
 
         //  to compute the score of a given word
-        IxFunction<Integer, Integer> scoreOfALetter = letter -> letterScores[letter - 'a'];
+        Function<Integer, Integer> scoreOfALetter = letter -> letterScores[letter - 'a'];
 
         // score of the same letters in a word
-        IxFunction<Entry<Integer, MutableLong>, Integer> letterScore =
+        Function<Entry<Integer, MutableLong>, Integer> letterScore =
                 entry ->
                         letterScores[entry.getKey() - 'a'] *
                         Integer.min(
@@ -65,11 +61,11 @@ public class ShakespearePlaysScrabbleWithIxOpt extends ShakespearePlaysScrabble 
                     ;
 
 
-        IxFunction<String, Ix<Integer>> toIntegerIx =
-                string -> chars(string);
+        Function<String, IObservable<Integer>> toIntegerIx =
+                string -> IObservable.characters(string);
 
         // Histogram of the letters in a given word
-        IxFunction<String, Ix<HashMap<Integer, MutableLong>>> histoOfLetters =
+        Function<String, IObservable<HashMap<Integer, MutableLong>>> histoOfLetters =
                 word -> toIntegerIx.apply(word)
                             .collect(
                                 () -> new HashMap<>(),
@@ -86,7 +82,7 @@ public class ShakespearePlaysScrabbleWithIxOpt extends ShakespearePlaysScrabble 
                             ) ;
 
         // number of blanks for a given letter
-        IxFunction<Entry<Integer, MutableLong>, Long> blank =
+        Function<Entry<Integer, MutableLong>, Long> blank =
                 entry ->
                         Long.max(
                             0L,
@@ -96,55 +92,61 @@ public class ShakespearePlaysScrabbleWithIxOpt extends ShakespearePlaysScrabble 
                     ;
 
         // number of blanks for a given word
-        IxFunction<String, Ix<Long>> nBlanks =
+        Function<String, IObservable<Long>> nBlanks =
                 word -> histoOfLetters.apply(word)
-                            .flatMap(map -> map.entrySet())
+                            .flatMapIterable(map -> map.entrySet())
                             .map(blank)
                             .sumLong();
 
 
         // can a word be written with 2 blanks?
-        IxFunction<String, Ix<Boolean>> checkBlanks =
+        Function<String, IObservable<Boolean>> checkBlanks =
                 word -> nBlanks.apply(word)
                             .map(l -> l <= 2L) ;
 
         // score taking blanks into account letterScore1
-        IxFunction<String, Ix<Integer>> score2 =
+        Function<String, IObservable<Integer>> score2 =
                 word -> histoOfLetters.apply(word)
-                            .flatMap(map -> map.entrySet())
+                            .flatMapIterable(map -> map.entrySet())
                             .map(letterScore)
                             .sumInt();
 
         // Placing the word on the board
         // Building the streams of first and last letters
-        IxFunction<String, Ix<Integer>> first3 =
-                word -> chars(word).take(3) ;
-        IxFunction<String, Ix<Integer>> last3 =
-                word -> chars(word).skip(3) ;
+        Function<String, IObservable<Integer>> first3 =
+                word -> IObservable.characters(word).take(3) ;
+        Function<String, IObservable<Integer>> last3 =
+                word -> IObservable.characters(word).skip(3) ;
 
 
         // Stream to be maxed
-        IxFunction<String, Ix<Integer>> toBeMaxed =
-            word -> Ix.concatArray(first3.apply(word), last3.apply(word))
+        Function<String, IObservable<Integer>> toBeMaxed =
+            word -> IObservable.concatArray(first3.apply(word), last3.apply(word))
             ;
 
         // Bonus for double letter
-        IxFunction<String, Ix<Integer>> bonusForDoubleLetter =
+        Function<String, IObservable<Integer>> bonusForDoubleLetter =
             word -> toBeMaxed.apply(word)
                         .map(scoreOfALetter)
                         .maxInt();
 
         // score of the word put on the board
-        IxFunction<String, Ix<Integer>> score3 =
+        Function<String, IObservable<Integer>> score3 =
             word ->
-                Ix.concatArray(
-                        score2.apply(word),
-                        bonusForDoubleLetter.apply(word)
-                )
-                .sumInt().map(v -> 2 * v + (word.length() == 7 ? 50 : 0));
+//        IObservable.concatArray(
+//                        score2.apply(word).map(v -> v * 2),
+//                        bonusForDoubleLetter.apply(word).map(v -> v * 2),
+//                        IObservable.just(word.length() == 7 ? 50 : 0)
+//                )
+//                .sumInt();
+        IObservable.concatArray(
+                score2.apply(word),
+                bonusForDoubleLetter.apply(word)
+        )
+        .sumInt().map(v -> 2 * v + (word.length() == 7 ? 50 : 0));
 
-        IxFunction<IxFunction<String, Ix<Integer>>, Ix<TreeMap<Integer, List<String>>>> buildHistoOnScore =
-                score -> Ix.from(shakespeareWords)
+        Function<Function<String, IObservable<Integer>>, IObservable<TreeMap<Integer, List<String>>>> buildHistoOnScore =
+                score -> IObservable.fromIterable(shakespeareWords)
                                 .filter(scrabbleWords::contains)
                                 .filter(word -> checkBlanks.apply(word).first())
                                 .collect(
@@ -163,7 +165,7 @@ public class ShakespearePlaysScrabbleWithIxOpt extends ShakespearePlaysScrabble 
         // best key / value pairs
         List<Entry<Integer, List<String>>> finalList2 =
                 buildHistoOnScore.apply(score3)
-                    .flatMap(map -> map.entrySet())
+                    .flatMapIterable(map -> map.entrySet())
                     .take(3)
                     .collect(
                         () -> new ArrayList<Entry<Integer, List<String>>>(),
@@ -179,7 +181,7 @@ public class ShakespearePlaysScrabbleWithIxOpt extends ShakespearePlaysScrabble 
     }
 
     public static void main(String[] args) throws Exception {
-        ShakespearePlaysScrabbleWithIxOpt s = new ShakespearePlaysScrabbleWithIxOpt();
+        IObservable4Java s = new IObservable4Java();
         s.init();
         System.out.println(s.measureThroughput());
     }

@@ -57,7 +57,7 @@ import io.reactivex.rxjava4.functions.Function;
 ///
 /// @author José
 /// @author akarnokd
-public class ShakespearePlaysScrabbleWithRxJava4StreamableOpt extends ShakespearePlaysScrabble {
+public class RxJava4Streamable extends ShakespearePlaysScrabble {
     static Streamable<Integer> chars(String word) {
 //        return Flowable.range(0, word.length()).map(i -> (int)word.charAt(i));
 //        return StringFlowable.characters(word);
@@ -365,7 +365,7 @@ public class ShakespearePlaysScrabbleWithRxJava4StreamableOpt extends Shakespear
     }
 
     public static void main(String[] args) throws Throwable {
-        ShakespearePlaysScrabbleWithRxJava4StreamableOpt s = new ShakespearePlaysScrabbleWithRxJava4StreamableOpt();
+        RxJava4Streamable s = new RxJava4Streamable();
         s.init();
         System.out.println(s.measureThroughput());
     }

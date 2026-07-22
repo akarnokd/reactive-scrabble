@@ -33,7 +33,7 @@ import hu.akarnokd.scrabble.support.ShakespearePlaysScrabble;
  * @author José
  * @author akarnokd
  */
-public class ShakespearePlaysScrabbleWithR4JOpt extends ShakespearePlaysScrabble {
+public class Reactive4Java extends ShakespearePlaysScrabble {
 
     static ObservableBuilder<Integer> chars(String word) {
         return ObservableBuilder.range(0, word.length()).select(i -> (int)word.charAt(i));
@@ -185,7 +185,7 @@ public class ShakespearePlaysScrabbleWithR4JOpt extends ShakespearePlaysScrabble
     }
 
     public static void main(String[] args) throws Exception {
-        ShakespearePlaysScrabbleWithR4JOpt s = new ShakespearePlaysScrabbleWithR4JOpt();
+        Reactive4Java s = new Reactive4Java();
         s.init();
         System.out.println(s.measureThroughput());
     }

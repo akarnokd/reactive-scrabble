@@ -20,19 +20,27 @@ package hu.akarnokd.scrabble.benchmark;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import org.openjdk.jmh.annotations.*;
 
-import hu.akarnokd.scrabble.enumerables.IEnumerable;
+import hu.akarnokd.rxjava4.math.MathObservable;
+import hu.akarnokd.rxjava4.string.StringObservable;
 import hu.akarnokd.scrabble.support.ShakespearePlaysScrabble;
+import io.reactivex.rxjava4.core.Observable;
+import io.reactivex.rxjava4.core.Single;
+import io.reactivex.rxjava4.functions.Function;
 
 /**
- * Shakespeare plays Scrabble with IEnumerable modeled after C#'s API design.
+ * Shakespeare plays Scrabble with RxJava 4 Observable optimized.
  * @author José
  * @author akarnokd
  */
-public class ShakespearePlaysScrabbleWithIEOpt extends ShakespearePlaysScrabble {
+public class RxJava4Observable extends ShakespearePlaysScrabble {
+
+    static Observable<Integer> chars(String word) {
+//        return Observable.range(0, word.length()).map(i -> (int)word.charAt(i));
+        return StringObservable.characters(word);
+    }
 
     @SuppressWarnings("unused")
     @Benchmark
@@ -45,7 +53,7 @@ public class ShakespearePlaysScrabbleWithIEOpt extends ShakespearePlaysScrabble 
         iterations = 5, time = 1
     )
     @Fork(1)
-    public List<Entry<Integer, List<String>>> measureThroughput() throws InterruptedException {
+    public List<Entry<Integer, List<String>>> measureThroughput() throws Throwable {
 
         //  to compute the score of a given word
         Function<Integer, Integer> scoreOfALetter = letter -> letterScores[letter - 'a'];
@@ -61,12 +69,12 @@ public class ShakespearePlaysScrabbleWithIEOpt extends ShakespearePlaysScrabble 
                     ;
 
 
-        Function<String, IEnumerable<Integer>> toIntegerIx =
-                string -> IEnumerable.characters(string);
+        Function<String, Observable<Integer>> toIntegerObservable =
+                string -> chars(string);
 
         // Histogram of the letters in a given word
-        Function<String, IEnumerable<HashMap<Integer, MutableLong>>> histoOfLetters =
-                word -> toIntegerIx.apply(word)
+        Function<String, Single<HashMap<Integer, MutableLong>>> histoOfLetters =
+                word -> toIntegerObservable.apply(word)
                             .collect(
                                 () -> new HashMap<>(),
                                 (HashMap<Integer, MutableLong> map, Integer value) ->
@@ -92,67 +100,63 @@ public class ShakespearePlaysScrabbleWithIEOpt extends ShakespearePlaysScrabble 
                     ;
 
         // number of blanks for a given word
-        Function<String, IEnumerable<Long>> nBlanks =
-                word -> histoOfLetters.apply(word)
-                            .flatMapIterable(map -> map.entrySet())
+        Function<String, Observable<Long>> nBlanks =
+                word -> MathObservable.sumLong(
+                            histoOfLetters.apply(word).flattenAsObservable(
+                                    map -> map.entrySet())
                             .map(blank)
-                            .sumLong();
+                            ) ;
 
 
         // can a word be written with 2 blanks?
-        Function<String, IEnumerable<Boolean>> checkBlanks =
+        Function<String, Observable<Boolean>> checkBlanks =
                 word -> nBlanks.apply(word)
                             .map(l -> l <= 2L) ;
 
         // score taking blanks into account letterScore1
-        Function<String, IEnumerable<Integer>> score2 =
-                word -> histoOfLetters.apply(word)
-                            .flatMapIterable(map -> map.entrySet())
+        Function<String, Observable<Integer>> score2 =
+                word -> MathObservable.sumInt(
+                            histoOfLetters.apply(word).flattenAsObservable(
+                                    map -> map.entrySet())
                             .map(letterScore)
-                            .sumInt();
+                            ) ;
 
         // Placing the word on the board
         // Building the streams of first and last letters
-        Function<String, IEnumerable<Integer>> first3 =
-                word -> IEnumerable.characters(word).take(3) ;
-        Function<String, IEnumerable<Integer>> last3 =
-                word -> IEnumerable.characters(word).skip(3) ;
+        Function<String, Observable<Integer>> first3 =
+                word -> chars(word).take(3) ;
+        Function<String, Observable<Integer>> last3 =
+                word -> chars(word).skip(3) ;
 
 
         // Stream to be maxed
-        Function<String, IEnumerable<Integer>> toBeMaxed =
-            word -> IEnumerable.concatArray(first3.apply(word), last3.apply(word))
+        Function<String, Observable<Integer>> toBeMaxed =
+            word -> Observable.concatArray(first3.apply(word), last3.apply(word))
             ;
 
         // Bonus for double letter
-        Function<String, IEnumerable<Integer>> bonusForDoubleLetter =
-            word -> toBeMaxed.apply(word)
+        Function<String, Observable<Integer>> bonusForDoubleLetter =
+            word -> MathObservable.max(toBeMaxed.apply(word)
                         .map(scoreOfALetter)
-                        .maxInt();
+                        ) ;
 
         // score of the word put on the board
-        Function<String, IEnumerable<Integer>> score3 =
+        Function<String, Observable<Integer>> score3 =
             word ->
-//        IEnumerable.concatArray(
-//                        score2.apply(word).map(v -> v * 2),
-//                        bonusForDoubleLetter.apply(word).map(v -> v * 2),
-//                        IEnumerable.just(word.length() == 7 ? 50 : 0)
-//                )
-//                .sumInt();
-        IEnumerable.concatArray(
-                score2.apply(word),
-                bonusForDoubleLetter.apply(word)
-        )
-        .sumInt().map(v -> 2 * v + (word.length() == 7 ? 50 : 0));
+                MathObservable.sumInt(Observable.concatArray(
+                        score2.apply(word),
+                        bonusForDoubleLetter.apply(word)
+                )
+                ).map(v -> 2 * v + (word.length() == 7 ? 50 : 0)) ;
 
-        Function<Function<String, IEnumerable<Integer>>, IEnumerable<TreeMap<Integer, List<String>>>> buildHistoOnScore =
-                score -> IEnumerable.fromIterable(shakespeareWords)
+        Function<Function<String, Observable<Integer>>, Single<TreeMap<Integer, List<String>>>> buildHistoOnScore =
+                score -> Observable.fromIterable(shakespeareWords)
                                 .filter(scrabbleWords::contains)
-                                .filter(word -> checkBlanks.apply(word).first())
+                                .filter(word -> checkBlanks.apply(word).blockingFirst())
                                 .collect(
                                     () -> new TreeMap<Integer, List<String>>(Comparator.reverseOrder()),
                                     (TreeMap<Integer, List<String>> map, String word) -> {
-                                        Integer key = score.apply(word).first() ;
+                                        Integer key = score.apply(word).blockingFirst() ;
                                         List<String> list = map.get(key) ;
                                         if (list == null) {
                                             list = new ArrayList<>() ;
@@ -164,8 +168,8 @@ public class ShakespearePlaysScrabbleWithIEOpt extends ShakespearePlaysScrabble 
 
         // best key / value pairs
         List<Entry<Integer, List<String>>> finalList2 =
-                buildHistoOnScore.apply(score3)
-                    .flatMapIterable(map -> map.entrySet())
+                buildHistoOnScore.apply(score3).flattenAsObservable(
+                        map -> map.entrySet())
                     .take(3)
                     .collect(
                         () -> new ArrayList<Entry<Integer, List<String>>>(),
@@ -173,15 +177,16 @@ public class ShakespearePlaysScrabbleWithIEOpt extends ShakespearePlaysScrabble 
                             list.add(entry) ;
                         }
                     )
-                    .first() ;
+                    .blockingGet() ;
+
 
 //        System.out.println(finalList2);
 
         return finalList2 ;
     }
 
-    public static void main(String[] args) throws Exception {
-        ShakespearePlaysScrabbleWithIEOpt s = new ShakespearePlaysScrabbleWithIEOpt();
+    public static void main(String[] args) throws Throwable {
+        RxJava4Observable s = new RxJava4Observable();
         s.init();
         System.out.println(s.measureThroughput());
     }

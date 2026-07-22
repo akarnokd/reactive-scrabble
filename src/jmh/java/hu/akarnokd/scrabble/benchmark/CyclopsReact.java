@@ -32,7 +32,7 @@ import hu.akarnokd.scrabble.support.ShakespearePlaysScrabble;
  * @author José
  * @author akarnokd
  */
-public class ShakespearePlaysScrabbleWithCyclopsReactOpt extends ShakespearePlaysScrabble {
+public class CyclopsReact extends ShakespearePlaysScrabble {
 
     static ReactiveSeq<Integer> chars(String word) {
         return ReactiveSeq.range(0, word.length()).map(i -> (int)word.charAt(i));
@@ -185,7 +185,7 @@ public class ShakespearePlaysScrabbleWithCyclopsReactOpt extends ShakespearePlay
     }
 
     public static void main(String[] args) throws Exception {
-        ShakespearePlaysScrabbleWithCyclopsReactOpt s = new ShakespearePlaysScrabbleWithCyclopsReactOpt();
+        CyclopsReact s = new CyclopsReact();
         s.init();
         System.out.println(s.measureThroughput());
     }

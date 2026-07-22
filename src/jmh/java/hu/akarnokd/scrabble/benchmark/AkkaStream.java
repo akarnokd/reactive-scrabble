@@ -38,7 +38,7 @@ import hu.akarnokd.scrabble.support.ShakespearePlaysScrabble;
  * @author José
  * @author akarnokd
  */
-public class ShakespearePlaysScrabbleWithAkkaStreamOpt extends ShakespearePlaysScrabble {
+public class AkkaStream extends ShakespearePlaysScrabble {
 
     ActorSystem actorSystem;
 
@@ -47,7 +47,7 @@ public class ShakespearePlaysScrabbleWithAkkaStreamOpt extends ShakespearePlaysS
     @Setup
     public void setup() {
 
-        Config cfg = ConfigFactory.parseResources(ShakespearePlaysScrabbleWithAkkaStreamOpt.class, "/akka-streams.conf").resolve();
+        Config cfg = ConfigFactory.parseResources(AkkaStream.class, "/akka-streams.conf").resolve();
         actorSystem = ActorSystem.create("sys", cfg);
         materializer = Materializer.createMaterializer(actorSystem);
 
@@ -228,7 +228,7 @@ public class ShakespearePlaysScrabbleWithAkkaStreamOpt extends ShakespearePlaysS
     }
 
     public static void main(String[] args) throws Exception {
-        ShakespearePlaysScrabbleWithAkkaStreamOpt s = new ShakespearePlaysScrabbleWithAkkaStreamOpt();
+        AkkaStream s = new AkkaStream();
         s.init();
         s.setup();
         try {

@@ -32,7 +32,7 @@ import hu.akarnokd.scrabble.support.ShakespearePlaysScrabble;
  * @author José
  * @author akarnokd
  */
-public class ShakespearePlaysScrabbleWithJOOLOpt extends ShakespearePlaysScrabble {
+public class JOOL extends ShakespearePlaysScrabble {
 
     Seq<Integer> chars(String string) {
         return Seq.range(0, string.length()).map(v -> (int)string.charAt(v));
@@ -217,7 +217,7 @@ public class ShakespearePlaysScrabbleWithJOOLOpt extends ShakespearePlaysScrabbl
     }
 
     public static void main(String[] args) throws Exception {
-        ShakespearePlaysScrabbleWithJOOLOpt s = new ShakespearePlaysScrabbleWithJOOLOpt();
+        JOOL s = new JOOL();
         s.init();
         System.out.println(s.measureThroughput());
     }

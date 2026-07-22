@@ -32,7 +32,7 @@ import hu.akarnokd.scrabble.support.ShakespearePlaysScrabble;
  * @author José
  * @author akarnokd
  */
-public class ShakespearePlaysScrabbleWithI4JOpt extends ShakespearePlaysScrabble {
+public class Iterable4Java extends ShakespearePlaysScrabble {
 
     static IterableBuilder<Integer> chars(String word) {
         return IterableBuilder.range(0, word.length()).select(i -> (int)word.charAt(i));
@@ -213,7 +213,7 @@ public class ShakespearePlaysScrabbleWithI4JOpt extends ShakespearePlaysScrabble
     }
 
     public static void main(String[] args) throws Exception {
-        ShakespearePlaysScrabbleWithI4JOpt s = new ShakespearePlaysScrabbleWithI4JOpt();
+        Iterable4Java s = new Iterable4Java();
         s.init();
         System.out.println(s.measureThroughput());
     }

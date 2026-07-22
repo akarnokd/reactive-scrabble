@@ -23,24 +23,22 @@ import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.*;
 
-import hu.akarnokd.rxjava3.math.MathFlowable;
-import hu.akarnokd.rxjava3.string.StringFlowable;
 import hu.akarnokd.scrabble.support.ShakespearePlaysScrabble;
-import io.reactivex.rxjava3.core.*;
-import io.reactivex.rxjava3.functions.Function;
+import ix.*;
 
 /**
- * Shakespeare plays Scrabble with RxJava 3 Flowable optimized.
+ * Shakespeare plays Scrabble with Ix optimized.
  * @author José
  * @author akarnokd
  */
-public class ShakespearePlaysScrabbleWithRxJava3FlowableOpt extends ShakespearePlaysScrabble {
-    static Flowable<Integer> chars(String word) {
-//        return Flowable.range(0, word.length()).map(i -> (int)word.charAt(i));
-        return StringFlowable.characters(word);
+public class IxJava extends ShakespearePlaysScrabble {
+
+    static Ix<Integer> chars(String word) {
+        //return Ix.range(0, word.length()).map(i -> (int)word.charAt(i));
+        return Ix.characters(word);
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({ "unchecked", "unused" })
     @Benchmark
     @BenchmarkMode(Mode.SampleTime)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -50,20 +48,14 @@ public class ShakespearePlaysScrabbleWithRxJava3FlowableOpt extends ShakespeareP
     @Measurement(
         iterations = 5, time = 1
     )
-    @Fork(value = 1, jvmArgs = {
-            "-XX:MaxInlineLevel=20"
-//            , "-XX:+UnlockDiagnosticVMOptions",
-//            , "-XX:+PrintAssembly",
-//            , "-XX:+TraceClassLoading",
-//            , "-XX:+LogCompilation"
-    })
-    public List<Entry<Integer, List<String>>> measureThroughput() throws Throwable {
+    @Fork(1)
+    public List<Entry<Integer, List<String>>> measureThroughput() throws InterruptedException {
 
         //  to compute the score of a given word
-        Function<Integer, Integer> scoreOfALetter = letter -> letterScores[letter - 'a'];
+        IxFunction<Integer, Integer> scoreOfALetter = letter -> letterScores[letter - 'a'];
 
         // score of the same letters in a word
-        Function<Entry<Integer, MutableLong>, Integer> letterScore =
+        IxFunction<Entry<Integer, MutableLong>, Integer> letterScore =
                 entry ->
                         letterScores[entry.getKey() - 'a'] *
                         Integer.min(
@@ -73,12 +65,12 @@ public class ShakespearePlaysScrabbleWithRxJava3FlowableOpt extends ShakespeareP
                     ;
 
 
-        Function<String, Flowable<Integer>> toIntegerFlowable =
+        IxFunction<String, Ix<Integer>> toIntegerIx =
                 string -> chars(string);
 
         // Histogram of the letters in a given word
-        Function<String, Single<HashMap<Integer, MutableLong>>> histoOfLetters =
-                word -> toIntegerFlowable.apply(word)
+        IxFunction<String, Ix<HashMap<Integer, MutableLong>>> histoOfLetters =
+                word -> toIntegerIx.apply(word)
                             .collect(
                                 () -> new HashMap<>(),
                                 (HashMap<Integer, MutableLong> map, Integer value) ->
@@ -94,7 +86,7 @@ public class ShakespearePlaysScrabbleWithRxJava3FlowableOpt extends ShakespeareP
                             ) ;
 
         // number of blanks for a given letter
-        Function<Entry<Integer, MutableLong>, Long> blank =
+        IxFunction<Entry<Integer, MutableLong>, Long> blank =
                 entry ->
                         Long.max(
                             0L,
@@ -104,75 +96,61 @@ public class ShakespearePlaysScrabbleWithRxJava3FlowableOpt extends ShakespeareP
                     ;
 
         // number of blanks for a given word
-        Function<String, Flowable<Long>> nBlanks =
-                word -> MathFlowable.sumLong(
-                            histoOfLetters.apply(word).flattenAsFlowable(
-                                    map -> map.entrySet()
-                            )
+        IxFunction<String, Ix<Long>> nBlanks =
+                word -> histoOfLetters.apply(word)
+                            .flatMap(map -> map.entrySet())
                             .map(blank)
-                        )
-                    ;
+                            .sumLong();
 
 
         // can a word be written with 2 blanks?
-        Function<String, Flowable<Boolean>> checkBlanks =
+        IxFunction<String, Ix<Boolean>> checkBlanks =
                 word -> nBlanks.apply(word)
                             .map(l -> l <= 2L) ;
 
         // score taking blanks into account letterScore1
-        Function<String, Flowable<Integer>> score2 =
-                word -> MathFlowable.sumInt(
-                            histoOfLetters.apply(word).flattenAsFlowable(
-                                map -> map.entrySet()
-                            )
+        IxFunction<String, Ix<Integer>> score2 =
+                word -> histoOfLetters.apply(word)
+                            .flatMap(map -> map.entrySet())
                             .map(letterScore)
-                            ) ;
+                            .sumInt();
 
         // Placing the word on the board
         // Building the streams of first and last letters
-        Function<String, Flowable<Integer>> first3 =
+        IxFunction<String, Ix<Integer>> first3 =
                 word -> chars(word).take(3) ;
-        Function<String, Flowable<Integer>> last3 =
+        IxFunction<String, Ix<Integer>> last3 =
                 word -> chars(word).skip(3) ;
 
 
         // Stream to be maxed
-        Function<String, Flowable<Integer>> toBeMaxed =
-            word -> Flowable.concat(first3.apply(word), last3.apply(word))
+        IxFunction<String, Ix<Integer>> toBeMaxed =
+            word -> Ix.concatArray(first3.apply(word), last3.apply(word))
             ;
 
         // Bonus for double letter
-        Function<String, Flowable<Integer>> bonusForDoubleLetter =
-            word -> MathFlowable.max(toBeMaxed.apply(word)
+        IxFunction<String, Ix<Integer>> bonusForDoubleLetter =
+            word -> toBeMaxed.apply(word)
                         .map(scoreOfALetter)
-                        ) ;
+                        .maxInt();
 
         // score of the word put on the board
-        Function<String, Flowable<Integer>> score3 =
+        IxFunction<String, Ix<Integer>> score3 =
             word ->
-//                MathFlowable.sumInt(Flowable.concat(
-//                        score2.apply(word).map(v -> v * 2),
-//                        bonusForDoubleLetter.apply(word).map(v -> v * 2),
-//                        Flowable.just(word.length() == 7 ? 50 : 0)
-//                  ));
-                MathFlowable.sumInt(Flowable.concat(
-                    score2.apply(word),
-                    bonusForDoubleLetter.apply(word)
-                )).map(v -> v * 2 + (word.length() == 7 ? 50 : 0))
-//                new FlowableSumIntArray<Integer>(
-//                        score2.apply(word),
-//                        bonusForDoubleLetter.apply(word)
-//                ).map(v -> 2 * v + (word.length() == 7 ? 50 : 0))
-                ;
+                Ix.concatArray(
+                        score2.apply(word),
+                        bonusForDoubleLetter.apply(word)
+                )
+                .sumInt().map(v -> 2 * v + (word.length() == 7 ? 50 : 0));
 
-        Function<Function<String, Flowable<Integer>>, Single<TreeMap<Integer, List<String>>>> buildHistoOnScore =
-                score -> Flowable.fromIterable(shakespeareWords)
+        IxFunction<IxFunction<String, Ix<Integer>>, Ix<TreeMap<Integer, List<String>>>> buildHistoOnScore =
+                score -> Ix.from(shakespeareWords)
                                 .filter(scrabbleWords::contains)
-                                .filter(word -> checkBlanks.apply(word).blockingFirst())
+                                .filter(word -> checkBlanks.apply(word).first())
                                 .collect(
                                     () -> new TreeMap<Integer, List<String>>(Comparator.reverseOrder()),
                                     (TreeMap<Integer, List<String>> map, String word) -> {
-                                        Integer key = score.apply(word).blockingFirst() ;
+                                        Integer key = score.apply(word).first() ;
                                         List<String> list = map.get(key) ;
                                         if (list == null) {
                                             list = new ArrayList<>() ;
@@ -184,9 +162,8 @@ public class ShakespearePlaysScrabbleWithRxJava3FlowableOpt extends ShakespeareP
 
         // best key / value pairs
         List<Entry<Integer, List<String>>> finalList2 =
-                    buildHistoOnScore.apply(score3).flattenAsFlowable(
-                            map -> map.entrySet()
-                    )
+                buildHistoOnScore.apply(score3)
+                    .flatMap(map -> map.entrySet())
                     .take(3)
                     .collect(
                         () -> new ArrayList<Entry<Integer, List<String>>>(),
@@ -194,8 +171,7 @@ public class ShakespearePlaysScrabbleWithRxJava3FlowableOpt extends ShakespeareP
                             list.add(entry) ;
                         }
                     )
-                    .blockingGet() ;
-
+                    .first() ;
 
 //        System.out.println(finalList2);
 
@@ -203,27 +179,8 @@ public class ShakespearePlaysScrabbleWithRxJava3FlowableOpt extends ShakespeareP
     }
 
     public static void main(String[] args) throws Exception {
-        ShakespearePlaysScrabbleWithRxJava2FlowableOpt s = new ShakespearePlaysScrabbleWithRxJava2FlowableOpt();
+        IxJava s = new IxJava();
         s.init();
         System.out.println(s.measureThroughput());
-
-        /*
-        ShakespearePlaysScrabbleWithRxJava3FlowableOpt s = new ShakespearePlaysScrabbleWithRxJava3FlowableOpt();
-        s.init();
-        RxSynchronousCoarseProfiler p = new RxSynchronousCoarseProfiler();
-        p.start();
-        for (int i = 0; i < 100; i++) {
-            System.out.println(s.measureThroughput());
-        }
-        p.clear();
-
-        System.out.println(s.measureThroughput());
-
-        p.stop();
-
-        System.out.println();
-
-        p.print();
-        */
     }
 }
