@@ -20,13 +20,12 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
 import java.util.function.*;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
+import java.util.stream.*;
 
 import org.openjdk.jmh.annotations.*;
 
-import hu.akarnokd.scrabble.support.*;
-import io.helidon.common.reactive.*;
+import hu.akarnokd.scrabble.support.ShakespearePlaysScrabble;
+import io.smallrye.mutiny.*;
 
 /// Shakespeare plays Scrabble with RxJava 4 Streamable optimized.
 ///
@@ -36,14 +35,13 @@ import io.helidon.common.reactive.*;
 ///
 /// | Step | Time (ms) | Improvement | vs Baseline |
 /// |------|------|-------------:|-------------:|
-/// | Baseline | 17,266 | - | - |
-/// | char streaming | 15,457 | -10,47% | |
+/// | Baseline |  | - | - |
 ///
 /// @author José
 /// @author akarnokd
-public class Helidon extends ShakespearePlaysScrabble {
+public class Mutiny extends ShakespearePlaysScrabble {
     static Multi<Integer> chars(String word) {
-        return new HelidonMultiCharSequence(word);
+        return Multi.createFrom().range(0, word.length()).map(index -> (int)word.charAt(index));
     }
 
     @SuppressWarnings("unused")
@@ -83,9 +81,10 @@ public class Helidon extends ShakespearePlaysScrabble {
                 string -> chars(string);
 
         // Histogram of the letters in a given word
-        Function<String, Single<Map<Integer, MutableLong>>> histoOfLetters =
+        Function<String, Uni<Map<Integer, MutableLong>>> histoOfLetters =
                 word -> toIntegerStreamable.apply(word)
-                            .collectStream(MutableLongMapCounter.INSTANCE)
+                            .collect()
+                            .with(MutableLongMapCounter.INSTANCE)
                             ;
 
         // number of blanks for a given letter
@@ -99,82 +98,82 @@ public class Helidon extends ShakespearePlaysScrabble {
                     ;
 
         // number of blanks for a given word
-        Function<String, Single<Long>> nBlanks =
-                word -> histoOfLetters.apply(word).flatMapIterable(
+        Function<String, Uni<Long>> nBlanks =
+                word -> histoOfLetters.apply(word).toMulti().onItem().transformToIterable(
                                 map -> map.entrySet()
                         )
                         .map(blank)
-                        .collectStream(SumLongCollector.INSTANCE)
+                        .collect().with(SumLongCollector.INSTANCE)
                     ;
 
 
         // can a word be written with 2 blanks?
-        Function<String, Single<Boolean>> checkBlanks =
+        Function<String, Uni<Boolean>> checkBlanks =
                 word -> nBlanks.apply(word)
                             .map(l -> l <= 2L) ;
 
         // score taking blanks into account letterScore1
-        Function<String, Single<Integer>> score2 =
-                word -> histoOfLetters.apply(word).flatMapIterable(
+        Function<String, Uni<Integer>> score2 =
+                word -> histoOfLetters.apply(word).toMulti().onItem().transformToIterable(
                             map -> map.entrySet()
                         )
                         .map(letterScore)
-                        .collectStream(SumIntCollector.INSTANCE)
+                        .collect().with(SumIntCollector.INSTANCE)
                     ;
 
         // Placing the word on the board
         // Building the streams of first and last letters
         Function<String, Multi<Integer>> first3 =
-                word -> chars(word).limit(3) ;
+                word -> chars(word).select().first(3) ;
         Function<String, Multi<Integer>> last3 =
-                word -> chars(word).skip(3) ;
+                word -> chars(word).skip().first(3) ;
 
 
         // Stream to be maxed
         Function<String, Multi<Integer>> toBeMaxed =
-            word -> Multi.concat(first3.apply(word), last3.apply(word))
+            word -> Multi.createBy().concatenating().streams(first3.apply(word), last3.apply(word))
             ;
 
         // Bonus for double letter
-        Function<String, Single<Integer>> bonusForDoubleLetter =
+        Function<String, Uni<Integer>> bonusForDoubleLetter =
             word -> toBeMaxed.apply(word)
                         .map(scoreOfALetter)
-                        .collectStream(MaxCollector.INSTANCE)
+                        .collect().with(MaxCollector.INSTANCE)
                         ;
 
         // score of the word put on the board
-        Function<String, Single<Integer>> score3 =
+        Function<String, Uni<Integer>> score3 =
             word ->
-                Multi.concat(
-                    score2.apply(word),
-                    bonusForDoubleLetter.apply(word)
+                Multi.createBy().concatenating().streams(
+                    score2.apply(word).toMulti(),
+                    bonusForDoubleLetter.apply(word).toMulti()
                 )
-                .collectStream(SumIntCollector.INSTANCE)
+                .collect().with(SumIntCollector.INSTANCE)
                 .map(v -> v * 2 + (word.length() == 7 ? 50 : 0))
                 ;
 
-        Function<Function<String, Single<Integer>>, Single<TreeMap<Integer, List<String>>>> buildHistoOnScore =
-                score -> Multi.create(shakespeareWords)
+        Function<Function<String, Uni<Integer>>, Uni<TreeMap<Integer, List<String>>>> buildHistoOnScore =
+                score -> Multi.createFrom().iterable(shakespeareWords)
                                 .filter(scrabbleWords::contains)
                                 .filter(word -> singleGet(checkBlanks.apply(word)))
-                                .collectStream(new ReverseTreeMapListCollector(word -> singleGet(score.apply(word))))
+                                .collect().with(new ReverseTreeMapListCollector(word -> singleGet(score.apply(word))))
                                 ;
 
         // best key / value pairs
         List<Entry<Integer, List<String>>> finalList2 =
-                    buildHistoOnScore.apply(score3).flatMapIterable(
+                    buildHistoOnScore.apply(score3).toMulti().onItem().transformToIterable(
                             map -> map.entrySet()
                     )
-                    .limit(3)
-                    .collectStream(Collectors.toList())
-                    .get();
+                    .select().first(3)
+                    .collect().with(Collectors.toList())
+                    .await().indefinitely();
 
         return finalList2 ;
     }
 
-    static <T> T singleGet(Single<T> source) {
+    static <T> T singleGet(Uni<T> source) {
         try {
-            return source.get();
+            return source.await().indefinitely();
         } catch (Throwable ex) {
             throw new CompletionException(ex);
         }
@@ -351,7 +350,7 @@ public class Helidon extends ShakespearePlaysScrabble {
     }
 
     public static void main(String[] args) throws Throwable {
-        Helidon s = new Helidon();
+        Mutiny s = new Mutiny();
         s.init();
         System.out.println(s.measureThroughput());
     }

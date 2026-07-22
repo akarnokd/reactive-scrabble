@@ -23,11 +23,11 @@ import io.helidon.common.reactive.Multi;
 /**
  * Streams the characters of a string.
  */
-public final class MultiCharSequence implements Multi<Integer> {
+public final class HelidonMultiCharSequence implements Multi<Integer> {
 
     final CharSequence string;
 
-    public MultiCharSequence(CharSequence string) {
+    public HelidonMultiCharSequence(CharSequence string) {
         this.string = string;
     }
 
