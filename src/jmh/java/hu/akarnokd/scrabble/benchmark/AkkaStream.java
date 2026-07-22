@@ -94,20 +94,11 @@ public class AkkaStream extends ShakespearePlaysScrabble {
         // Histogram of the letters in a given word
         Function<String, Source<HashMap<Integer, MutableLong>, NotUsed>> histoOfLetters =
                 word -> {
-                    HashMap<Integer, MutableLong> map = new HashMap<>();
                     return toIntegerIx.apply(word)
-                    .map(value -> {
-                        MutableLong newValue = map.get(value) ;
-                        if (newValue == null) {
-                            newValue = new MutableLong();
-                            map.put(value, newValue);
-                        }
-                        newValue.incAndSet();
-                        return map;
-                    })
-                    .drop(Long.MAX_VALUE)
-                    .concat(Source.single(map))
-                    ;
+                            .fold(new HashMap<Integer, MutableLong>(), (map, value) -> {
+                                map.computeIfAbsent(value, _ -> new MutableLong()).incAndSet();
+                                return map;
+                            });
                 };
         // number of blanks for a given letter
         Function<Entry<Integer, MutableLong>, Long> blank =
@@ -167,42 +158,26 @@ public class AkkaStream extends ShakespearePlaysScrabble {
 
         Function<Function<String, Source<Integer, NotUsed>>, Source<TreeMap<Integer, List<String>>, NotUsed>> buildHistoOnScore =
                 score -> {
-                    TreeMap<Integer, List<String>> map = new TreeMap<>(Comparator.reverseOrder());
                     return Source.from(shakespeareWords)
                                     .filter(scrabbleWords::contains)
-                                    .flatMapConcat((String word) ->
+                                    .flatMapConcat(word ->
                                         checkBlanks.apply(word)
                                         .filter(v -> v)
-                                        .map(_ -> word)
-                                    )
-                                    .flatMapConcat(word -> score.apply(word)
-                                            .map(key -> {
-                                                List<String> list = map.get(key) ;
-                                                if (list == null) {
-                                                    list = new ArrayList<>() ;
-                                                    map.put(key, list) ;
-                                                }
-                                                list.add(word) ;
-                                                return word;
-                                            }))
-                                    .drop(Long.MAX_VALUE)
-                                    .map(_ -> map)
-                                    .concat(Source.single(map));
+                                        .flatMapConcat(_ -> score.apply(word))
+                                        .map(key -> Map.entry(key, word)))
+                                    .fold(new TreeMap<Integer, List<String>>(Comparator.reverseOrder()), (map, e) -> {
+                                        map.computeIfAbsent(e.getKey(), _ -> new ArrayList<String>()).add(e.getValue());
+                                        return map;
+                                    });
                 } ;
 
         // best key / value pairs
-        List<Entry<Integer, List<String>>> finalList2 = new ArrayList<>();
-
-                first(buildHistoOnScore.apply(score3)
+        List<Entry<Integer, List<String>>> finalList2 =
+                buildHistoOnScore.apply(score3)
                     .mapConcat(map -> map.entrySet())
                     .take(3)
-                    .map(v -> {
-                        finalList2.add(v); return v;
-                    })
-                    .drop(Long.MAX_VALUE)
-                    .map(_ -> finalList2)
-                    .concat(Source.single(finalList2))
-                    );
+                    .runWith(Sink.seq(), materializer)
+                    .toCompletableFuture().join();
 
 
 //        System.out.println(finalList2);

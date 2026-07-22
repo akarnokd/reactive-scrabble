@@ -19,7 +19,7 @@ gradlew jmh -PjmhIncludes=Helidon --rerun-tasks
 | Benchmark                              | Version |   Score |    Error | Units |
 |----------------------------------------|---------|--------:|---------:|-------|
 | AbacusCommon                           | 7.8.8   |  24,711 | ±  0,270 | ms/op |
-| AkkaStream                             | 2.13    | 268,331 | ±  6,197 | ms/op |
+| AkkaStream                             | 2.13    | 249,370 | ± 13,106 | ms/op |
 | AnnimonStream                          | 1.2.2   |   9,104 | ±  0,057 | ms/op |
 | CyclopsReact                           | 2.1.1   |  21,071 | ±  0,455 | ms/op |
 | EclipseCollections                     | 13.0.0  |   6,465 | ±  0,027 | ms/op |
@@ -34,7 +34,7 @@ gradlew jmh -PjmhIncludes=Helidon --rerun-tasks
 | JavaStream                             | 26.0.1  |  10,608 | ±  0,129 | ms/op |
 | JavaStreamParallel                     | 26.0.1  |   1,321 | ±  0,006 | ms/op |
 | Mutiny                                 | 3.3.0   |  27,250 | ±  0,161 | ms/op |
-| PekkoStream                            | 2.0.0M3 | 329,376 | ± 18,317 | ms/op |
+| PekkoStream                            | 2.0.0M3 | 224,951 | ±  5,113 | ms/op |
 | Reactive4Java                          | 0.98.1  | 355,223 | ± 11,164 | ms/op |
 | Reactor                                | 3.8.6   |  15,604 | ±  0,160 | ms/op |
 | ReactorParallel                        | 3.8.6   |   3,697 | ±  0,147 | ms/op |
@@ -84,7 +84,7 @@ gradlew jmh -PjmhIncludes=Helidon --rerun-tasks
 | JOOL                                   | 0.9.15  |  41,213 | ±  0,713 | ms/op |
 | Vavr                                   | 1.0.1   |  48,369 | ±  0,631 | ms/op |
 | RxJava1                                | 1.3.8   |  50,612 | ±  0,421 | ms/op |
-| AkkaStream                             | 2.13    | 268,331 | ±  6,197 | ms/op |
-| PekkoStream                            | 2.0.0M3 | 329,376 | ± 18,317 | ms/op |
+| PekkoStream                            | 2.0.0M3 | 224,951 | ±  5,113 | ms/op |
+| AkkaStream                             | 2.13    | 249,370 | ± 13,106 | ms/op |
 | Reactive4Java                          | 0.98.1  | 355,223 | ± 11,164 | ms/op |
 
