@@ -21,6 +21,7 @@ gradlew jmh -PjmhIncludes=Helidon --rerun-tasks
 | AkkaStream                             | 2.13    | 268,331 | ±  6,197 | ms/op |
 | AnnimonStream                          | 1.2.2   |   9,104 | ±  0,057 | ms/op |
 | CyclopsReact                           | 2.1.1   |  21,071 | ±  0,455 | ms/op |
+| EclipseCollections                     | 13.0.0  |   6,465 | ±  0,027 | ms/op |
 | Guava                                  | 33.6.0s |  14,104 | ±  0,172 | ms/op |
 | Helidon                                | 4.5.1   |  15,909 | ±  0,172 | ms/op |
 | IEnumerable4Java                       | 1.0.0   |   8,928 | ±  0,087 | ms/op |
@@ -57,6 +58,7 @@ gradlew jmh -PjmhIncludes=Helidon --rerun-tasks
 | RxJava3Parallel                        | 3.1.12  |   3,085 | ±  0,123 | ms/op |
 | RxJava2Parallel                        | 2.2.21  |   3,089 | ±  0,135 | ms/op |
 | ReactorParallel                        | 3.8.6   |   3,697 | ±  0,147 | ms/op |
+| EclipseCollections                     | 13.0.0  |   6,465 | ±  0,027 | ms/op |
 | IObservable4Java                       | 1.0.0   |   8,593 | ±  0,094 | ms/op |
 | IEnumerable4Java                       | 1.0.0   |   8,928 | ±  0,087 | ms/op |
 | AnnimonStream                          | 1.2.2   |   9,104 | ±  0,057 | ms/op |
@@ -79,6 +81,6 @@ gradlew jmh -PjmhIncludes=Helidon --rerun-tasks
 | JOOL                                   | 0.9.15  |  41,213 | ±  0,713 | ms/op |
 | Vavr                                   | 1.0.1   |  48,369 | ±  0,631 | ms/op |
 | RxJava1                                | 1.3.8   |  50,612 | ±  0,421 | ms/op |
-| Reactive4Java                          | 0.98.1  | 355,223 | ± 11,164 | ms/op |
 | AkkaStream                             | 2.13    | 268,331 | ±  6,197 | ms/op |
+| Reactive4Java                          | 0.98.1  | 355,223 | ± 11,164 | ms/op |
 
