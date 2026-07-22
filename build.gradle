@@ -18,15 +18,10 @@ if (!hasProperty('mainClass')) {
     ext.mainClass = ''
 }
 
-
-
 repositories {
     mavenCentral()
     mavenLocal()
 
-    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
-    maven { url 'https://oss.sonatype.org/content/groups/public' }
-    maven { url 'https://repo.spring.io/libs-snapshot' }
     maven { url 'https://central.sonatype.com/repository/maven-snapshots' }
 }
 
@@ -64,6 +59,16 @@ dependencies {
 
     implementation 'io.smallrye.reactive:mutiny:3.3.0'
 
+    implementation 'one.util:streamex:0.9.0'
+
+    // Be my guest, Grok produced wrong method calls (looked outdated)
+    // Fable went on a tour of the solar system and ate up 30% of my allowance
+    // I'm not going to search for analogues manually, API is all over the place
+    implementation 'org.eclipse.collections:eclipse-collections-api:13.0.0'
+    implementation 'org.eclipse.collections:eclipse-collections:13.0.0'
+
+    implementation 'io.vavr:vavr:1.0.1'
+    
     // -------------------------------------------------------------------
 
     implementation('com.github.akarnokd:ixjava:1.+') {
@@ -87,14 +92,6 @@ dependencies {
     }
 
     // -------------------------------------------------------------------
-
-
-}
-
-processResources {
-  from ('src/main/java') {
-    include '**/*.conf'
-  }
 }
 
 jmh {
