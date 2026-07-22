@@ -24,7 +24,7 @@ import java.util.stream.*;
 
 import org.openjdk.jmh.annotations.*;
 
-import hu.akarnokd.scrabble.support.ShakespearePlaysScrabble;
+import hu.akarnokd.scrabble.support.*;
 import io.smallrye.mutiny.*;
 
 /// Shakespeare plays Scrabble with RxJava 4 Streamable optimized.
@@ -35,13 +35,14 @@ import io.smallrye.mutiny.*;
 ///
 /// | Step | Time (ms) | Improvement | vs Baseline |
 /// |------|------|-------------:|-------------:|
-/// | Baseline |  | - | - |
+/// | Baseline | 30,902 | - | - |
+/// | Char sequence | 28,558 | -7,58% | |
 ///
 /// @author José
 /// @author akarnokd
 public class Mutiny extends ShakespearePlaysScrabble {
     static Multi<Integer> chars(String word) {
-        return Multi.createFrom().range(0, word.length()).map(index -> (int)word.charAt(index));
+        return new MutinyMultiCharSequence(word);
     }
 
     @SuppressWarnings("unused")
@@ -77,12 +78,12 @@ public class Mutiny extends ShakespearePlaysScrabble {
                     ;
 
 
-        Function<String, Multi<Integer>> toIntegerStreamable =
+        Function<String, Multi<Integer>> toIntegerMulti =
                 string -> chars(string);
 
         // Histogram of the letters in a given word
         Function<String, Uni<Map<Integer, MutableLong>>> histoOfLetters =
-                word -> toIntegerStreamable.apply(word)
+                word -> toIntegerMulti.apply(word)
                             .collect()
                             .with(MutableLongMapCounter.INSTANCE)
                             ;
