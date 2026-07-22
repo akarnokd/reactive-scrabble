@@ -34,6 +34,7 @@ gradlew jmh -PjmhIncludes=Helidon --rerun-tasks
 | JavaStream                             | 26.0.1  |  10,608 | ±  0,129 | ms/op |
 | JavaStreamParallel                     | 26.0.1  |   1,321 | ±  0,006 | ms/op |
 | Mutiny                                 | 3.3.0   |  27,250 | ±  0,161 | ms/op |
+| PekkoStream                            | 2.0.0M3 | 329,376 | ± 18,317 | ms/op |
 | Reactive4Java                          | 0.98.1  | 355,223 | ± 11,164 | ms/op |
 | Reactor                                | 3.8.6   |  15,604 | ±  0,160 | ms/op |
 | ReactorParallel                        | 3.8.6   |   3,697 | ±  0,147 | ms/op |
@@ -84,5 +85,6 @@ gradlew jmh -PjmhIncludes=Helidon --rerun-tasks
 | Vavr                                   | 1.0.1   |  48,369 | ±  0,631 | ms/op |
 | RxJava1                                | 1.3.8   |  50,612 | ±  0,421 | ms/op |
 | AkkaStream                             | 2.13    | 268,331 | ±  6,197 | ms/op |
+| PekkoStream                            | 2.0.0M3 | 329,376 | ± 18,317 | ms/op |
 | Reactive4Java                          | 0.98.1  | 355,223 | ± 11,164 | ms/op |
 

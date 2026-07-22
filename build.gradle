@@ -71,6 +71,8 @@ dependencies {
 
     implementation 'com.landawn.abacus:abacus-common:7.8.8'
 
+    implementation 'org.apache.pekko:pekko-stream_2.13:+'
+
     // -------------------------------------------------------------------
 
     implementation('com.github.akarnokd:ixjava:1.+') {
