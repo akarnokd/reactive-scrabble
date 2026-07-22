@@ -68,7 +68,9 @@ dependencies {
     implementation 'org.eclipse.collections:eclipse-collections:13.0.0'
 
     implementation 'io.vavr:vavr:1.0.1'
-    
+
+    implementation 'com.landawn.abacus:abacus-common:7.8.8'
+
     // -------------------------------------------------------------------
 
     implementation('com.github.akarnokd:ixjava:1.+') {

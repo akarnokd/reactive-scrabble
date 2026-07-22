@@ -18,6 +18,7 @@ gradlew jmh -PjmhIncludes=Helidon --rerun-tasks
 
 | Benchmark                              | Version |   Score |    Error | Units |
 |----------------------------------------|---------|--------:|---------:|-------|
+| AbacusCommon                           | 7.8.8   |  24,711 | ±  0,270 | ms/op |
 | AkkaStream                             | 2.13    | 268,331 | ±  6,197 | ms/op |
 | AnnimonStream                          | 1.2.2   |   9,104 | ±  0,057 | ms/op |
 | CyclopsReact                           | 2.1.1   |  21,071 | ±  0,455 | ms/op |
@@ -77,6 +78,7 @@ gradlew jmh -PjmhIncludes=Helidon --rerun-tasks
 | Helidon                                | 4.5.1   |  15,909 | ±  0,172 | ms/op |
 | RxJava4Streamable                      | 4.0.0a21|  19,190 | ±  0,187 | ms/op |
 | CyclopsReact                           | 2.1.1   |  21,071 | ±  0,455 | ms/op |
+| AbacusCommon                           | 7.8.8   |  24,711 | ±  0,270 | ms/op |
 | Mutiny                                 | 3.3.0   |  27,250 | ±  0,161 | ms/op |
 | JOOL                                   | 0.9.15  |  41,213 | ±  0,713 | ms/op |
 | Vavr                                   | 1.0.1   |  48,369 | ±  0,631 | ms/op |
