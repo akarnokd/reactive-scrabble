@@ -73,6 +73,8 @@ dependencies {
 
     implementation 'org.apache.pekko:pekko-stream_2.13:+'
 
+    implementation 'com.softwaremill.jox:flows:0.5.3'
+
     // -------------------------------------------------------------------
 
     implementation('com.github.akarnokd:ixjava:1.+') {
