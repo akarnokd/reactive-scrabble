@@ -69,7 +69,7 @@ dependencies {
 
     implementation 'io.vavr:vavr:1.0.1'
 
-    implementation 'com.landawn.abacus:abacus-common:7.8.8'
+    implementation 'com.landawn.abacus:abacus-common:7.8.9'
 
     implementation 'org.apache.pekko:pekko-stream_2.13:+'
 
